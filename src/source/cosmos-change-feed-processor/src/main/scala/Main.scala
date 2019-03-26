@@ -7,12 +7,7 @@ object Main {
     System.out.println(documentResourceResponse.getRequestCharge());
   }
 
-  def main(args: Array[String]) {
-    println("Start!")
-
-    val cosmosServiceEndpoint = sys.env("COSMOS_SERVICE_ENDPOINT")
-    val cosmosKey = sys.env("COSMOS_KEY")
-
+  def buildAsyncDocumentClient(cosmosServiceEndpoint: String, cosmosKey: String): AsyncDocumentClient = {
     val policy = new ConnectionPolicy()
     policy.setConnectionMode(ConnectionMode.Direct)
 
@@ -23,9 +18,20 @@ object Main {
 				.withConsistencyLevel(ConsistencyLevel.Eventual)
 				.build()
 
-    val doc = new Document("{ 'id': 'doc%d', 'counter': '%d'}".format(2,1))
+    asyncClient
+  }
+
+  def main(args: Array[String]) {
+    val cosmosServiceEndpoint = sys.env("COSMOS_SERVICE_ENDPOINT")
+    val cosmosKey = sys.env("COSMOS_KEY")
     val databaseName = "database"
     val collectionName = "collection1"
+
+    println("Start!")
+    val asyncClient = buildAsyncDocumentClient(cosmosServiceEndpoint, cosmosKey)
+
+    val doc = new Document("{ 'id': 'doc%d', 'counter': '%d'}".format(4,1))
+
     val collectionLink = "/dbs/%s/colls/%s".format(databaseName, collectionName)
 
     val createDocumentObservable = asyncClient.createDocument(collectionLink, doc, null, false);
