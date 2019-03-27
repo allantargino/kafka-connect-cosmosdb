@@ -3,8 +3,8 @@ import com.microsoft.azure.cosmosdb._;
 
 object Main {
 
-  def success(documentResourceResponse: ResourceResponse[Document]){
-    System.out.println(documentResourceResponse.getRequestCharge());
+  def process() {
+
   }
 
   def main(args: Array[String]) {
@@ -13,15 +13,23 @@ object Main {
     val databaseName = "database"
     val collectionName = "collection1"
 
+    val localhostname = java.net.InetAddress.getLocalHost().getHostName()
+    println("localhostname:" + localhostname)
+
+
     println("Start!")
     val asyncClient = ClientBuilder.buildAsyncDocumentClient(cosmosServiceEndpoint, cosmosKey)
-    val documentInserter = new DocumentInserter(asyncClient, databaseName, collectionName)
-    val feedListener = new ChangeFeedListener(asyncClient, databaseName, collectionName)
+    // val documentInserter = new DocumentInserter(asyncClient, databaseName, collectionName)
+    val feedReader = new ChangeFeedReader(asyncClient, databaseName, collectionName)
 
     // documentInserter.insertRandom(3)
-    feedListener.listen()
+    // feedListener.readPartitionKeyRanges()
+    val documentsChanged = feedReader.readChangeFeed("0")
+    // feedReader.readChangeFeed("0")
+    println("Finished polling. Printing:")
+    documentsChanged.foreach { println }
 
-    // println("Bye, cosmos!")
+    println("Bye, cosmos!")
     // System.exit(0)
   }
 }
