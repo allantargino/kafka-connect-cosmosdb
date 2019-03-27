@@ -22,8 +22,7 @@ class ChangeFeedReader(asyncClient: AsyncDocumentClient, databaseName: String, c
                 });
     }
 
-
-    def readChangeFeed(partitionKeyRangeId: String):List[com.microsoft.azure.cosmosdb.Document] = {
+    def readChangeFeed(partitionKeyRangeId: String, documentProcessor: List[String] => Unit) {
         val collectionLink = "/dbs/%s/colls/%s".format(databaseName, collectionName)
         val changeFeedOptions = new ChangeFeedOptions()
         changeFeedOptions.setPartitionKeyRangeId(partitionKeyRangeId)
@@ -31,28 +30,26 @@ class ChangeFeedReader(asyncClient: AsyncDocumentClient, databaseName: String, c
         changeFeedOptions.setRequestContinuation("12");
         changeFeedOptions.setMaxItemCount(2);
 
-        var documents = new ListBuffer[com.microsoft.azure.cosmosdb.Document]()
-
         val changeFeedObservable = asyncClient.queryDocumentChangeFeed(collectionLink,changeFeedOptions)
         
         changeFeedObservable
+                .doOnNext(value => {
+                    val documents = value.getResults().map(d => d.toJson())
+                    documentProcessor(documents.toList)
+                })
                 .subscribe(
                     feedResponse => {
-                        val results = feedResponse.getResults()
-                        println("feedResponse: " + results.length)
-                        // results.foreach { println }
-                        results.foreach(documents += _)
-
+                        println("Count: " + feedResponse.getResults().length)
                         val responseContinuation = feedResponse.getResponseContinuation()
-                        println("responseContinuation: " + responseContinuation)
+                        println("ResponseContinuation: " + responseContinuation)
                     },
                     error => {
                         println("an error happened: " + error.getMessage());
                     });
+                    // TODO: onCompleted
 
-        changeFeedObservable.toCompletable().await()
+        // changeFeedObservable.toCompletable().await()
 
         println("End polling")
-        documents.toList
   }
 }
