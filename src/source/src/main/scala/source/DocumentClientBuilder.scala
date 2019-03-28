@@ -3,7 +3,7 @@ package source
 import com.microsoft.azure.cosmosdb.rx._;
 import com.microsoft.azure.cosmosdb._;
 
-object ClientBuilder {
+object DocumentClientBuilder {
 
   def createConnectionPolicy(): ConnectionPolicy = {
     val policy = new ConnectionPolicy()

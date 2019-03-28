@@ -1,8 +1,10 @@
 package source
 
+import java.util.concurrent.CountDownLatch
 import com.microsoft.azure.cosmosdb.rx._
 import com.microsoft.azure.cosmosdb._
 import com.google.gson._
+
 
 class PartitionFeedStateManager(asyncClient: AsyncDocumentClient, databaseName: String, collectionName: String) {
 
@@ -10,25 +12,29 @@ class PartitionFeedStateManager(asyncClient: AsyncDocumentClient, databaseName: 
     val gson = new Gson()
     val json = gson.toJson(partitionFeedState)
     val document = new Document(json)
-    val collectionLink = ClientBuilder.getCollectionLink(databaseName, collectionName)
+    val collectionLink = DocumentClientBuilder.getCollectionLink(databaseName, collectionName)
 
     val createDocumentObservable = asyncClient.upsertDocument(collectionLink, document, null, false)
+    val saveStateCompletionLatch = new CountDownLatch(1)
 
     createDocumentObservable
-      .single()
       .subscribe(
         documentResourceResponse => {
           println("Saved state for %s with token %s".format(partitionFeedState.id, partitionFeedState.continuationToken))
         },
         error => {
           println("An error happened when saving: " + error.getMessage());
+        },
+        () => {
+          println("End saving")
+          //saveStateCompletionLatch.countDown()
         })
 
-    //createDocumentObservable.toCompletable().await();
+    //saveStateCompletionLatch.await()
   }
 
   def load(partitionKeyRangeId: String): PartitionFeedState = {
-    val databaseLink = ClientBuilder.getDatabaseLink(databaseName)
+    val databaseLink = DocumentClientBuilder.getDatabaseLink(databaseName)
     val querySpec = new SqlQuerySpec("SELECT * FROM @collectionName, where @collectionName.partitionKeyRangeId = @partitionKeyRangeId",
       new SqlParameterCollection(
         new SqlParameter("@collectionName", collectionName),

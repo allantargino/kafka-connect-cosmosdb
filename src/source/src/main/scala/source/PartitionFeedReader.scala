@@ -41,22 +41,24 @@ class PartitionFeedReader(asyncClient: AsyncDocumentClient, databaseName: String
     return changeFeedOptions
   }
 
-  def readChangeFeed(documentProcessor: List[String] => Unit) : PartitionFeedState = {
+  def readChangeFeed(documentProcessor: List[String] => Unit)  {
     val collectionLink = "/dbs/%s/colls/%s".format(databaseName, collectionName)
     val changeFeedOptions = createChangeFeedOptionsFromState()
     val changeFeedObservable = asyncClient.queryDocumentChangeFeed(collectionLink, changeFeedOptions)
 
     changeFeedObservable
-      .doOnNext(value => {
-        val documents = value.getResults().map(d => d.toJson())
+      .doOnNext(feedResponse => {
+        val documents = feedResponse.getResults().map(d => d.toJson())
         documentProcessor(documents.toList)
+      })
+      .
+      .doOnNext(feedResponse => {
+        val continuationToken = feedResponse.getResponseContinuation().replaceAll("^\"|\"$", "")
+        partitionFeedState = new PartitionFeedState(partitionKeyRangeId, continuationToken)
+        partitionFeedStateManager.save(partitionFeedState)
       })
       .subscribe(
         feedResponse => {
-          val continuationToken = feedResponse.getResponseContinuation().replaceAll("^\"|\"$", "")
-          partitionFeedState = new PartitionFeedState(partitionKeyRangeId, continuationToken)
-          partitionFeedStateManager.save(partitionFeedState)
-
           println("Count: " + feedResponse.getResults().length)
           println("ResponseContinuation: " + feedResponse.getResponseContinuation())
         },
@@ -66,9 +68,5 @@ class PartitionFeedReader(asyncClient: AsyncDocumentClient, databaseName: String
         () => {
           println("Finished reading change feed from partitionKeyRangeId" + partitionKeyRangeId)
         })
-
-    changeFeedObservable.toCompletable().await()
-
-    return partitionFeedState
   }
 }
