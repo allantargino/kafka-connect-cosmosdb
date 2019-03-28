@@ -1,6 +1,8 @@
 package source
 
 import java.util.concurrent.CountDownLatch
+
+import rx.{Observable, _}
 import com.microsoft.azure.cosmosdb.rx._
 import com.microsoft.azure.cosmosdb._
 import com.google.gson._
@@ -8,29 +10,15 @@ import com.google.gson._
 
 class PartitionFeedStateManager(asyncClient: AsyncDocumentClient, databaseName: String, collectionName: String) {
 
-  def save(partitionFeedState: PartitionFeedState): Unit = {
+  def save(partitionFeedState: PartitionFeedState): Observable[ResourceResponse[Document]] = {
     val gson = new Gson()
     val json = gson.toJson(partitionFeedState)
     val document = new Document(json)
     val collectionLink = DocumentClientBuilder.getCollectionLink(databaseName, collectionName)
 
     val createDocumentObservable = asyncClient.upsertDocument(collectionLink, document, null, false)
-    val saveStateCompletionLatch = new CountDownLatch(1)
 
-    createDocumentObservable
-      .subscribe(
-        documentResourceResponse => {
-          println("Saved state for %s with token %s".format(partitionFeedState.id, partitionFeedState.continuationToken))
-        },
-        error => {
-          println("An error happened when saving: " + error.getMessage());
-        },
-        () => {
-          println("End saving")
-          //saveStateCompletionLatch.countDown()
-        })
-
-    //saveStateCompletionLatch.await()
+    return createDocumentObservable
   }
 
   def load(partitionKeyRangeId: String): PartitionFeedState = {
