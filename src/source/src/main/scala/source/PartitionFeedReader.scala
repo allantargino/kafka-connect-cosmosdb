@@ -5,7 +5,7 @@ import com.microsoft.azure.cosmosdb._
 
 import scala.collection.JavaConversions._
 
-class PartitionFeedReader(asyncClient: AsyncDocumentClient, databaseName: String, collectionName: String, partitionKeyRangeId: String, private var partitionFeedState: PartitionFeedState) {
+class PartitionFeedReader(asyncClient: AsyncDocumentClient, databaseName: String, collectionName: String, partitionKeyRangeId: String, private var partitionFeedState: PartitionFeedState, partitionFeedStateManager: PartitionFeedStateManager) {
 
   /*    def readPartitionKeyRanges(){
         val localhostname = java.net.InetAddress.getLocalHost().getHostName()
@@ -33,9 +33,9 @@ class PartitionFeedReader(asyncClient: AsyncDocumentClient, databaseName: String
     changeFeedOptions.setMaxItemCount(3)
 
     partitionFeedState.continuationToken match {
-      case Some(t) => changeFeedOptions.setRequestContinuation(t)
-      case None => changeFeedOptions.setStartFromBeginning(true)
       case null => changeFeedOptions.setStartFromBeginning(true)
+      case "" => changeFeedOptions.setStartFromBeginning(true)
+      case t => changeFeedOptions.setRequestContinuation(t)
     }
 
     return changeFeedOptions
@@ -53,13 +53,15 @@ class PartitionFeedReader(asyncClient: AsyncDocumentClient, databaseName: String
       })
       .subscribe(
         feedResponse => {
-          partitionFeedState = new PartitionFeedState(partitionKeyRangeId, Option(feedResponse.getResponseContinuation()))
+          val continuationToken = feedResponse.getResponseContinuation().replaceAll("^\"|\"$", "")
+          partitionFeedState = new PartitionFeedState(partitionKeyRangeId, continuationToken)
+          partitionFeedStateManager.save(partitionFeedState)
 
           println("Count: " + feedResponse.getResults().length)
           println("ResponseContinuation: " + feedResponse.getResponseContinuation())
         },
         error => {
-          println("an error happened: " + error.getMessage());
+          println("an error happened: " + error.getMessage())
         },
         () => {
           println("Finished reading change feed from partitionKeyRangeId" + partitionKeyRangeId)

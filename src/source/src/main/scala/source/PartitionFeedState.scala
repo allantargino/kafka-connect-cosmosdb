@@ -1,5 +1,5 @@
 package source
 
-class PartitionFeedState(val partitionKeyRangeId: String, val continuationToken: Option[String]) {
-  def this(partitionKeyRangeId: String) = this(partitionKeyRangeId, None)
+class PartitionFeedState(val id: String, val continuationToken: String) {
+  def this(id: String) = this(id, null)
 }
