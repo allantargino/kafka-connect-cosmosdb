@@ -1,8 +1,10 @@
+package source;
+
 import com.microsoft.azure.cosmosdb.rx._;
 import com.microsoft.azure.cosmosdb._;
 
 object ClientBuilder {
-    
+
     def createConnectionPolicy():ConnectionPolicy = {
         val policy = new ConnectionPolicy()
         policy.setConnectionMode(ConnectionMode.Direct)
@@ -17,4 +19,5 @@ object ClientBuilder {
                     .withConsistencyLevel(ConsistencyLevel.Eventual)
                     .build()
     }
+
 }

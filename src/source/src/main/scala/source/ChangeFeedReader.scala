@@ -1,3 +1,5 @@
+package source;
+
 import com.microsoft.azure.cosmosdb.rx._;
 import com.microsoft.azure.cosmosdb._;
 import scala.collection.JavaConversions._
@@ -28,7 +30,7 @@ class ChangeFeedReader(asyncClient: AsyncDocumentClient, databaseName: String, c
         changeFeedOptions.setPartitionKeyRangeId(partitionKeyRangeId)
         //   changeFeedOptions.setStartFromBeginning(true);
         changeFeedOptions.setRequestContinuation("12");
-        changeFeedOptions.setMaxItemCount(2);
+        changeFeedOptions.setMaxItemCount(100);
 
         val changeFeedObservable = asyncClient.queryDocumentChangeFeed(collectionLink,changeFeedOptions)
         
@@ -47,9 +49,7 @@ class ChangeFeedReader(asyncClient: AsyncDocumentClient, databaseName: String, c
                         println("an error happened: " + error.getMessage());
                     });
                     // TODO: onCompleted
-
         // changeFeedObservable.toCompletable().await()
-
-        println("End polling")
+        // println("End polling")
   }
 }
