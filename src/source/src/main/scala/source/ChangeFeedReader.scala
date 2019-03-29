@@ -14,8 +14,7 @@ class ChangeFeedReader(cosmosServiceEndpoint: String, cosmosKey: String, databas
   val partitionFeedStateManager = new PartitionFeedStateManager(asyncClient, databaseName, stateCollectionName)
 
   val partitionKeyRangeId = "0"
-  val partitionInitialFeedState = partitionFeedStateManager.load(partitionKeyRangeId) //TODO: Inject into PartitionFeedReader
-  val feedReader0 = new PartitionFeedReader(asyncClient, databaseName, monitoredCollectionName, partitionKeyRangeId, partitionInitialFeedState, partitionFeedStateManager)
+  val feedReader0 = new PartitionFeedReader(asyncClient, databaseName, monitoredCollectionName, partitionKeyRangeId, partitionFeedStateManager)
 
   def getPartitionRangeIds(): List[String] = {
     val collectionLink = DocumentClientBuilder.getCollectionLink(databaseName, monitoredCollectionName)
