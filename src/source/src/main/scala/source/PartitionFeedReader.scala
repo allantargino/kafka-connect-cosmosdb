@@ -27,14 +27,17 @@ class PartitionFeedReader(asyncClient: AsyncDocumentClient, databaseName: String
     val changeFeedObservable = asyncClient.queryDocumentChangeFeed(collectionLink, changeFeedOptions)
 
     changeFeedObservable
+      // Process documents
       .doOnNext(feedResponse => {
         val documents = feedResponse.getResults().map(d => d.toJson())
         documentProcessor(documents.toList)
       })
+      // Logging
       .doOnNext(feedResponse => {
         println("Count: " + feedResponse.getResults().length)
         println("ResponseContinuation: " + feedResponse.getResponseContinuation())
       })
+      // Save state
       .flatMap(feedResponse => {
         println("Saving State!")
         val continuationToken = feedResponse.getResponseContinuation().replaceAll("^\"|\"$", "")
