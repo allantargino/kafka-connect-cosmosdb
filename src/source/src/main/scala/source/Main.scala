@@ -24,7 +24,6 @@ object Main {
 
     // Read ChangeFeed:
     val changeFeedReader = new ChangeFeedReader(cosmosServiceEndpoint, cosmosKey, databaseName, monitoredCollectionName, stateCollectionName)
-    //changeFeedReader.readChangeFeed(documentProcessor)
-    changeFeedReader.getPartitionRangeIds()
+    changeFeedReader.readChangeFeed(documentProcessor)
   }
 }

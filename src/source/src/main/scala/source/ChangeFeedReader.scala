@@ -4,17 +4,18 @@ import com.microsoft.azure.cosmosdb.rx._
 import com.microsoft.azure.cosmosdb._
 
 import scala.collection.JavaConversions._
-import scala.collection.mutable.LinkedList
 
 class ChangeFeedReader(cosmosServiceEndpoint: String, cosmosKey: String, databaseName: String, monitoredCollectionName: String, stateCollectionName: String) {
 
-  //TODO: Create a map rangeId->feedReader
-
   val asyncClient = DocumentClientBuilder.buildAsyncDocumentClient(cosmosServiceEndpoint, cosmosKey)
   val partitionFeedStateManager = new PartitionFeedStateManager(asyncClient, databaseName, stateCollectionName)
+  val partitionFeedReaders = createPartitionMap()
 
-  val partitionKeyRangeId = "0"
-  val feedReader0 = new PartitionFeedReader(asyncClient, databaseName, monitoredCollectionName, partitionKeyRangeId, partitionFeedStateManager)
+  def createPartitionMap(): Map[String, PartitionFeedReader] = {
+    val rangeIdList = getPartitionRangeIds()
+    val feedReaderMap = Map(rangeIdList map { id => (id, new PartitionFeedReader(asyncClient, databaseName, monitoredCollectionName, id, partitionFeedStateManager)) }: _*)
+    return feedReaderMap
+  }
 
   def getPartitionRangeIds(): List[String] = {
     val collectionLink = DocumentClientBuilder.getCollectionLink(databaseName, monitoredCollectionName)
@@ -29,9 +30,7 @@ class ChangeFeedReader(cosmosServiceEndpoint: String, cosmosKey: String, databas
 
   def readChangeFeed(documentProcessor: List[String] => Unit): Unit = {
     println("Started!")
-    println("Initial continuationToken: " + partitionInitialFeedState.continuationToken)
-    //TODO: foreach feedReader:
-    feedReader0.readChangeFeed(documentProcessor)
+    for ((id, pfr) <- partitionFeedReaders) pfr.readChangeFeed(documentProcessor)
     //TODO: use latch to await
     println("Finished!")
   }
