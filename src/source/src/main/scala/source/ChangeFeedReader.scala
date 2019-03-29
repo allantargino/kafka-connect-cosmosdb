@@ -1,5 +1,7 @@
 package source
 
+import java.util.concurrent.CountDownLatch
+
 import com.microsoft.azure.cosmosdb.rx._
 import com.microsoft.azure.cosmosdb._
 
@@ -30,8 +32,9 @@ class ChangeFeedReader(cosmosServiceEndpoint: String, cosmosKey: String, databas
 
   def readChangeFeed(documentProcessor: List[String] => Unit): Unit = {
     println("Started!")
-    for ((id, pfr) <- partitionFeedReaders) pfr.readChangeFeed(documentProcessor)
-    //TODO: use latch to await
+    val countDownLatch = new CountDownLatch(partitionFeedReaders.size)
+    for ((id, pfr) <- partitionFeedReaders) pfr.readChangeFeed(documentProcessor, countDownLatch)
+    countDownLatch.await()
     println("Finished!")
   }
 
