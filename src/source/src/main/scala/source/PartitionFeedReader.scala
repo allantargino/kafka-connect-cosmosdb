@@ -7,14 +7,14 @@ import com.microsoft.azure.cosmosdb._
 
 import scala.collection.JavaConversions._
 
-class PartitionFeedReader(asyncClient: AsyncDocumentClient, databaseName: String, collectionName: String, partitionKeyRangeId: String, partitionFeedStateManager: PartitionLeaseStateManager) {
+class PartitionFeedReader(asyncClient: AsyncDocumentClient, databaseName: String, collectionName: String, partitionKeyRangeId: String, partitionFeedStateManager: PartitionLeaseStateManager, changeFeedProcessorOptions: ChangeFeedProcessorOptions) {
 
   var partitionFeedState = partitionFeedStateManager.load(partitionKeyRangeId)
 
   private def createChangeFeedOptionsFromState(): ChangeFeedOptions = {
     val changeFeedOptions = new ChangeFeedOptions()
     changeFeedOptions.setPartitionKeyRangeId(partitionKeyRangeId)
-    changeFeedOptions.setMaxItemCount(3)
+    changeFeedOptions.setMaxItemCount(changeFeedProcessorOptions.queryPartitionsMaxBatchSize)
 
     partitionFeedState.continuationToken match {
       case null => changeFeedOptions.setStartFromBeginning(true)

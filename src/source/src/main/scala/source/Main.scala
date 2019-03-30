@@ -2,7 +2,7 @@ package source
 
 object Main {
 
-  class SampleObserver extends ChangeFeedObserver{
+  class SampleObserver extends ChangeFeedObserver {
     override def processChanges(documentList: List[String]): Unit = {
       if (documentList.nonEmpty) {
         println("Documents to process:" + documentList.length)
@@ -19,12 +19,12 @@ object Main {
     val uri = sys.env("COSMOS_SERVICE_ENDPOINT")
     val masterKey = sys.env("COSMOS_KEY")
     val databaseName = "database"
-    val monitoredCollectionName = "collection1"
-    val stateCollectionName = "collectionAux1"
+    val feedCollectionName = "collection1"
+    val leaseCollectionName = "collectionAux1"
 
-    val feedCollectionInfo = new DocumentCollectionInfo(uri, masterKey, databaseName, monitoredCollectionName)
-    val leaseCollectionInfo = new DocumentCollectionInfo(uri, masterKey, databaseName, stateCollectionName)
-    val changeFeedProcessorOptions = new ChangeFeedProcessorOptions()
+    val feedCollectionInfo = new DocumentCollectionInfo(uri, masterKey, databaseName, feedCollectionName)
+    val leaseCollectionInfo = new DocumentCollectionInfo(uri, masterKey, databaseName, leaseCollectionName)
+    val changeFeedProcessorOptions = new ChangeFeedProcessorOptions(queryPartitionsMaxBatchSize = 100, defaultFeedPollDelay = 3000)
     val sampleObserver = new SampleObserver()
 
     val builder = new ChangeFeedProcessorBuilder()
@@ -37,6 +37,8 @@ object Main {
         .build()
 
     processor.start()
-    System.exit(0)
+
+    //processor.stop()
+    //System.exit(0)
   }
 }

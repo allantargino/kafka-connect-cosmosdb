@@ -12,14 +12,15 @@ class ChangeFeedProcessor(feedCollectionInfo: DocumentCollectionInfo, leaseColle
 
   val partitionLeaseStateManager = new PartitionLeaseStateManager(asyncClientLease, leaseCollectionInfo.databaseName, leaseCollectionInfo.collectionName)
   val partitionFeedReaders = createPartitionMap()
+  private var run = true
 
-  def createPartitionMap(): Map[String, PartitionFeedReader] = {
+  private def createPartitionMap(): Map[String, PartitionFeedReader] = {
     val rangeIdList = getPartitionRangeIds()
-    val feedReaderMap = Map(rangeIdList map { partitionKeyRangeId => (partitionKeyRangeId, new PartitionFeedReader(asyncClientFeed, feedCollectionInfo.databaseName, feedCollectionInfo.collectionName, partitionKeyRangeId, partitionLeaseStateManager)) }: _*)
+    val feedReaderMap = Map(rangeIdList map { partitionKeyRangeId => (partitionKeyRangeId, new PartitionFeedReader(asyncClientFeed, feedCollectionInfo.databaseName, feedCollectionInfo.collectionName, partitionKeyRangeId, partitionLeaseStateManager, changeFeedProcessorOptions)) }: _*)
     return feedReaderMap
   }
 
-  def getPartitionRangeIds(): List[String] = {
+  private def getPartitionRangeIds(): List[String] = {
     val collectionLink = DocumentClientBuilder.getCollectionLink(feedCollectionInfo.databaseName, feedCollectionInfo.collectionName)
     val changeFeedObservable = asyncClientFeed.readPartitionKeyRanges(collectionLink, null)
 
@@ -32,18 +33,30 @@ class ChangeFeedProcessor(feedCollectionInfo: DocumentCollectionInfo, leaseColle
   def start(): Unit = {
     println("Started!")
 
-    val countDownLatch = new CountDownLatch(partitionFeedReaders.size)
-    // Parallel
-    partitionFeedReaders.par.foreach { p => p._2.readChangeFeed(changeFeedObserver.processChanges, countDownLatch) }
-    // Serial:
-    //for ((id, pfr) <- partitionFeedReaders) pfr.readChangeFeed(changeFeedObserver.processChanges, countDownLatch)
-    countDownLatch.await()
-
-    println("Finished!")
+    spawn {
+      do {
+        val countDownLatch = new CountDownLatch(partitionFeedReaders.size)
+        // Parallel
+        partitionFeedReaders.par.foreach { p => p._2.readChangeFeed(changeFeedObserver.processChanges, countDownLatch) }
+        // Serial:
+        //for ((id, pfr) <- partitionFeedReaders) pfr.readChangeFeed(changeFeedObserver.processChanges, countDownLatch)
+        countDownLatch.await()
+        println("Waiting...")
+        Thread.sleep(changeFeedProcessorOptions.defaultFeedPollDelay)
+      } while (run)
+    }
   }
 
   def stop(): Unit = {
+    run = false
+    println("Finished!")
+  }
 
+  private def spawn(p: => Unit) {
+    val t = new Thread() {
+      override def run() = p
+    }
+    t.start()
   }
 
 }
