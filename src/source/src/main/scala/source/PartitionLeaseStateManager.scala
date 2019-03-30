@@ -1,14 +1,12 @@
 package source
 
-import java.util.concurrent.CountDownLatch
-
 import rx.{Observable, _}
 import com.microsoft.azure.cosmosdb.rx._
 import com.microsoft.azure.cosmosdb._
 import com.google.gson._
 
 
-class PartitionFeedStateManager(asyncClient: AsyncDocumentClient, databaseName: String, collectionName: String) {
+class PartitionLeaseStateManager(asyncClient: AsyncDocumentClient, databaseName: String, collectionName: String) {
 
   private val gson = new Gson()
 

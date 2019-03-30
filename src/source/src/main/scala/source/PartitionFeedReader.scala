@@ -7,7 +7,7 @@ import com.microsoft.azure.cosmosdb._
 
 import scala.collection.JavaConversions._
 
-class PartitionFeedReader(asyncClient: AsyncDocumentClient, databaseName: String, collectionName: String, partitionKeyRangeId: String, partitionFeedStateManager: PartitionFeedStateManager) {
+class PartitionFeedReader(asyncClient: AsyncDocumentClient, databaseName: String, collectionName: String, partitionKeyRangeId: String, partitionFeedStateManager: PartitionLeaseStateManager) {
 
   var partitionFeedState = partitionFeedStateManager.load(partitionKeyRangeId)
 
