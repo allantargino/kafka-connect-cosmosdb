@@ -4,3 +4,6 @@ scalaVersion := "2.12.8"
 
 libraryDependencies += "com.microsoft.azure" % "azure-cosmosdb" % "2.4.3"
 libraryDependencies += "com.google.code.gson" % "gson" % "2.8.5"
+
+trapExit := false
+fork in run := true

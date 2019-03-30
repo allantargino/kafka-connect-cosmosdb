@@ -1,10 +1,7 @@
 package source
 
 import java.util.concurrent.CountDownLatch
-
-import com.microsoft.azure.cosmosdb.rx._
 import com.microsoft.azure.cosmosdb._
-
 import scala.collection.JavaConversions._
 
 class ChangeFeedReader(cosmosServiceEndpoint: String, cosmosKey: String, databaseName: String, monitoredCollectionName: String, stateCollectionName: String) {

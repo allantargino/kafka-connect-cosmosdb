@@ -10,8 +10,9 @@ import com.google.gson._
 
 class PartitionFeedStateManager(asyncClient: AsyncDocumentClient, databaseName: String, collectionName: String) {
 
+  private val gson = new Gson()
+
   def save(partitionFeedState: PartitionFeedState): Observable[ResourceResponse[Document]] = {
-    val gson = new Gson()
     val json = gson.toJson(partitionFeedState)
     val document = new Document(json)
     val collectionLink = DocumentClientBuilder.getCollectionLink(databaseName, collectionName)
@@ -22,21 +23,28 @@ class PartitionFeedStateManager(asyncClient: AsyncDocumentClient, databaseName: 
   }
 
   def load(partitionKeyRangeId: String): PartitionFeedState = {
-    val databaseLink = DocumentClientBuilder.getDatabaseLink(databaseName)
-    val querySpec = new SqlQuerySpec("SELECT * FROM @collectionName, where @collectionName.partitionKeyRangeId = @partitionKeyRangeId",
+    val collectionLink = DocumentClientBuilder.getCollectionLink(databaseName, collectionName)
+    val querySpec = new SqlQuerySpec("SELECT * FROM " + collectionName + " where " + collectionName + ".id = @id",
       new SqlParameterCollection(
-        new SqlParameter("@collectionName", collectionName),
-        new SqlParameter("@partitionKeyRangeId", partitionKeyRangeId)
+        //new SqlParameter("@collectionName", collectionName),
+        new SqlParameter("@id", partitionKeyRangeId)
       ))
-    val queryFeedObservable = asyncClient.queryCollections(databaseLink, querySpec, null)
+
+    val queryOptions = new FeedOptions()
+    queryOptions.setEnableCrossPartitionQuery(true)
+
+    val queryFeedObservable = asyncClient.queryDocuments(collectionLink, querySpec, queryOptions)
 
     try {
       val results = queryFeedObservable.toBlocking().single().getResults()
-      val partitionFeedState = results.iterator().next()
-      return partitionFeedState.toObject(classOf[PartitionFeedState])
+      val partitionFeedState = results.iterator().next().toJson()
+      return gson.fromJson(partitionFeedState, classOf[PartitionFeedState])
     }
     catch {
-      case _: Throwable => return new PartitionFeedState(partitionKeyRangeId)
+      case error: Throwable => {
+        System.err.println("Error when getting last state from partitionKeyRangeId. Details: " + error)
+        return new PartitionFeedState(partitionKeyRangeId)
+      }
     }
   }
 }

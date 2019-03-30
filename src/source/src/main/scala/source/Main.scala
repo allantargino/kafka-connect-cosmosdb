@@ -25,5 +25,6 @@ object Main {
     // Read ChangeFeed:
     val changeFeedReader = new ChangeFeedReader(cosmosServiceEndpoint, cosmosKey, databaseName, monitoredCollectionName, stateCollectionName)
     changeFeedReader.readChangeFeed(documentProcessor)
+    System.exit(0)
   }
 }
