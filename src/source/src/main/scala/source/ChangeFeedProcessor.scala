@@ -2,6 +2,7 @@ package source
 
 import com.microsoft.azure.cosmosdb._
 import java.util.concurrent.CountDownLatch
+
 import scala.collection.JavaConversions._
 
 class ChangeFeedProcessor(feedCollectionInfo: DocumentCollectionInfo, leaseCollectionInfo: DocumentCollectionInfo, changeFeedProcessorOptions: ChangeFeedProcessorOptions, changeFeedObserver: ChangeFeedObserver) {
@@ -30,10 +31,19 @@ class ChangeFeedProcessor(feedCollectionInfo: DocumentCollectionInfo, leaseColle
 
   def start(): Unit = {
     println("Started!")
+
     val countDownLatch = new CountDownLatch(partitionFeedReaders.size)
-    for ((id, pfr) <- partitionFeedReaders) pfr.readChangeFeed(changeFeedObserver.processChanges, countDownLatch)
+    // Parallel
+    partitionFeedReaders.par.foreach { p => p._2.readChangeFeed(changeFeedObserver.processChanges, countDownLatch) }
+    // Serial:
+    //for ((id, pfr) <- partitionFeedReaders) pfr.readChangeFeed(changeFeedObserver.processChanges, countDownLatch)
     countDownLatch.await()
+
     println("Finished!")
+  }
+
+  def stop(): Unit = {
+
   }
 
 }
