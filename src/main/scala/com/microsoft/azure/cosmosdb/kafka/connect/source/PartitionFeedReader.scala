@@ -1,4 +1,4 @@
-package source
+package com.microsoft.azure.cosmosdb.kafka.connect.source
 
 import java.util.concurrent.CountDownLatch
 

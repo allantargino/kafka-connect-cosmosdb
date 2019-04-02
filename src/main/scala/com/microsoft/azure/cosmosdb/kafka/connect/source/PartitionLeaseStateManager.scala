@@ -1,4 +1,4 @@
-package source
+package com.microsoft.azure.cosmosdb.kafka.connect.source
 
 import rx.{Observable, _}
 import com.microsoft.azure.cosmosdb.rx._
