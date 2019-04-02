@@ -24,7 +24,6 @@ class PartitionLeaseStateManager(asyncClient: AsyncDocumentClient, databaseName:
     val collectionLink = DocumentClientBuilder.getCollectionLink(databaseName, collectionName)
     val querySpec = new SqlQuerySpec("SELECT * FROM " + collectionName + " where " + collectionName + ".id = @id",
       new SqlParameterCollection(
-        //new SqlParameter("@collectionName", collectionName),
         new SqlParameter("@id", partitionKeyRangeId)
       ))
 

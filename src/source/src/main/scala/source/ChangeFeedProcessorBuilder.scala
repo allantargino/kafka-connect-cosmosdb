@@ -36,7 +36,7 @@ class ChangeFeedProcessorBuilder(feedCollectionInfo: DocumentCollectionInfo, lea
     return new ChangeFeedProcessor(this.feedCollectionInfo, this.leaseCollectionInfo, this.changeFeedProcessorOptions, this.changeFeedObserver)
   }
 
-  def guardAgainstNull[T: ClassTag](objectToCheck: T): Unit = {
+  private def guardAgainstNull[T: ClassTag](objectToCheck: T): Unit = {
     val className = classTag[T].runtimeClass.getSimpleName()
     val messageIfNull = "%s can't be null!".format(className)
     if (objectToCheck == null) throw new NullPointerException(messageIfNull)
